@@ -1,10 +1,23 @@
 import inspect
+import string
 import uuid
+
 
 try:
     from Cookie import SimpleCookie
 except ImportError:
     from http.cookies import SimpleCookie
+
+
+VALID_KEY_CHARS = string.ascii_lowercase + string.digits
+
+
+class SessionId:
+
+    def __set__(self, s_obj, s_key):
+        if not set(s_key).issubset(set(VALID_KEY_CHARS)):
+            raise ValueError("Invalid characters in session key")
+        setattr(s_obj, "id", s_key)
 
 
 class BaseSessionMeta(type):
@@ -41,6 +54,33 @@ class DictBasedSessionManager(BaseSession):
             return True
         else:
             return False
+
+
+class SlottedSessionIdChecked(object):
+
+    __slots__ = ('id', 'data')
+
+    def __init__(self):
+
+        self.id = None
+        self.data = {}
+
+    def __setattr__(self, name, value):
+        if name == 'id' and value is not None:
+            if not set(value).issubset(set(VALID_KEY_CHARS)):
+                raise ValueError("Invalid characters in session key")
+        super().__setattr__(name, value)
+
+    def __setitem__(self, key, value):
+        self.data[key] = value
+
+    def __getitem__(self, key):
+        return self.data[key]
+
+    def get(self, key, default=None):
+        if key in self.data:
+            return self.data[key]
+        return default
 
 
 class Session(object):
