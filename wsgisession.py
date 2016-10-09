@@ -14,13 +14,18 @@ VALID_KEY_CHARS = string.ascii_lowercase + string.digits
 
 class SessionId:
 
+    def __get__(self, obj, objtype):
+        print('Retrieving')
+        return self.key
+
     def __set__(self, s_obj, s_key):
         if not set(s_key).issubset(set(VALID_KEY_CHARS)):
             raise ValueError("Invalid characters in session key")
         setattr(s_obj, "id", s_key)
+        self.key = s_key
 
 
-class BaseSessionMeta(type):
+class BaseManagerMeta(type):
 
     def __new__(meta, name, bases, class_dict):
         # Don’t validate the abstract BaseSession class
@@ -34,11 +39,11 @@ class BaseSessionMeta(type):
         return type.__new__(meta, name, bases, class_dict)
 
 
-class BaseSession(object, metaclass=BaseSessionMeta):
+class BaseManager(object, metaclass=BaseManagerMeta):
     pass
 
 
-class DictBasedSessionManager(BaseSession):
+class DictBasedSessionManager(BaseManager):
 
     sessions = {}
 
@@ -108,7 +113,7 @@ class SimpleSession(object):
     __slots__ = ('id', 'data', 'manager')
 
     def __init__(self, manager_inst):
-        self.id = None
+        self.id = SessionId()
         self.data = {}
         self.manager = manager_inst
 
