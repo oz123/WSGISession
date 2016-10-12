@@ -15,13 +15,12 @@ VALID_KEY_CHARS = string.ascii_lowercase + string.digits
 class SessionId:
 
     def __get__(self, obj, objtype):
-        print('Retrieving')
         return self.key
 
     def __set__(self, s_obj, s_key):
         if not set(s_key).issubset(set(VALID_KEY_CHARS)):
             raise ValueError("Invalid characters in session key")
-        setattr(s_obj, "id", s_key)
+            setattr(s_obj, "id", s_key)
         self.key = s_key
 
 
@@ -61,20 +60,7 @@ class DictBasedSessionManager(BaseManager):
             return False
 
 
-class SlottedSessionIdChecked(object):
-
-    __slots__ = ('id', 'data')
-
-    def __init__(self):
-
-        self.id = None
-        self.data = {}
-
-    def __setattr__(self, name, value):
-        if name == 'id' and value is not None:
-            if not set(value).issubset(set(VALID_KEY_CHARS)):
-                raise ValueError("Invalid characters in session key")
-        super().__setattr__(name, value)
+class BaseSessionMixin(object):
 
     def __setitem__(self, key, value):
         self.data[key] = value
@@ -86,6 +72,24 @@ class SlottedSessionIdChecked(object):
         if key in self.data:
             return self.data[key]
         return default
+
+
+class SessionIdChecked(BaseSessionMixin):
+
+    id = SessionId()
+
+    def __init__(self):
+        self.data = {}
+
+
+class SlottedSessionIdChecked(BaseSessionMixin):
+
+    __slots__ = ('id', 'data')
+
+    def __init__(self):
+
+        self.id = None
+        self.data = {}
 
 
 class Session(object):
